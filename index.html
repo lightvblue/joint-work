@@ -40,9 +40,6 @@
       justify-content: center;
       gap: 10px;
     }
-    .logo {
-      height: 30px;
-    }
     .subtitle {
       grid-column: 1 / -1;
       font-size: 13px;
@@ -75,14 +72,15 @@
     label {
       color: #555;
     }
-    input {
+    input, select {
       padding: 7px 9px;
       border-radius: 8px;
       border: 1px solid #d0d0d7;
       font-size: 13px;
       outline: none;
+      background: #fff;
     }
-    input:focus {
+    input:focus, select:focus {
       border-color: #ffb400;
       box-shadow: 0 0 0 1px rgba(255, 179, 0, 0.3);
     }
@@ -131,13 +129,6 @@
       transform: translateY(1px);
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     }
-    .preview-logo-wrap {
-      text-align: center;
-      margin-bottom: 4px;
-    }
-    .preview-logo {
-      height: 30px;
-    }
     .preview-title {
       text-align: center;
       font-weight: 700;
@@ -154,7 +145,7 @@
       line-height: 1.6;
     }
     .bottom-line {
-      margin-top: 30px;
+      margin-top: 60px;  /* 아래로 더 내리기 */
       font-size: 12px;
       text-align: center;
       line-height: 2;
@@ -196,10 +187,7 @@
 <body>
 <div class="layout">
   <div class="main">
-    <h1>
-      <img src="logo.png" alt="모기지리더스 로고" class="logo" />
-      업무지원 확인서
-    </h1>
+    <h1>업무지원 확인서</h1>
     <div class="subtitle">
       대출 실행 계약에 대한 주모집자·공동모집자의 업무지원을 확인하고,
       내부 수수료 배분(주 60% / 공동 40%) 근거로 활용하는 양식입니다.
@@ -215,7 +203,18 @@
         </div>
         <div class="field">
           <label for="productName">상품명</label>
-          <input id="productName" />
+          <select id="productName">
+            <option value="">상품명을 선택하세요</option>
+            <!-- TODO: 필요 시 아래 option 복사해서 Excel 목록 그대로 추가 -->
+            <option>주택담보대출</option>
+            <option>일반자금대출(만기일시상환) 신한MYTAXI 행복대출</option>
+            <option>일반자금대출(분할상환) 신한 MY CAR 대출(신차)</option>
+            <option>일반자금대출(분할상환) 신한MYTAXI 행복대출</option>
+            <option>일반자금대출 TOPS부동산대출(만기일시)</option>
+            <option>일반자금대출 TOPS부동산대출(분할상환)</option>
+            <option>주택자금대출 신한전세대출(서울보증)</option>
+            <option>주택자금대출 신한전세대출(주택금융공사)</option>
+          </select>
         </div>
       </div>
       <div class="form-row">
@@ -249,7 +248,7 @@
           <th style="width:80px;">구 분</th>
           <th>등록번호</th>
           <th>성명</th>
-          <th>서명(텍스트)</th>
+          <th>서명(수기작성)</th>
         </tr>
         </thead>
         <tbody>
@@ -291,9 +290,6 @@
     <!-- 미리보기 / PDF 영역 -->
     <div class="card" id="preview-card">
       <div id="pdfArea">
-        <div class="preview-logo-wrap">
-          <img src="logo.png" alt="모기지리더스 로고" class="preview-logo" />
-        </div>
         <div class="preview-title">업무지원 확인서</div>
 
         <!-- 1. 대출 실행 계약 정보 -->
@@ -341,7 +337,7 @@
             <th style="width:80px;">구 분</th>
             <th>등록번호</th>
             <th>성명</th>
-            <th>서명</th>
+            <th>서명(수기작성)</th>
           </tr>
           </thead>
           <tbody>
@@ -410,7 +406,10 @@
     const get = id => document.getElementById(id).value.trim();
 
     document.getElementById('pv_financialInstitution').innerText = get('financialInstitution');
-    document.getElementById('pv_productName').innerText = get('productName');
+
+    const productSelect = document.getElementById('productName');
+    document.getElementById('pv_productName').innerText =
+      productSelect.value || '';
 
     // 대출금액은 항상 콤마 포맷
     const loanInput = document.getElementById('loanAmount');
@@ -452,13 +451,15 @@
       loanInput.value = formatNumberWithCommas(loanInput.value);
       syncPreview();
     });
+
+    document.getElementById('productName').addEventListener('change', syncPreview);
   }
 
   // PDF 저장
   function downloadPdf() {
     const element = document.getElementById('pdfArea');
     const opt = {
-      margin:       15,  // 좌우 여백 넉넉하게
+      margin:       15,
       filename:     '업무지원_확인서.pdf',
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2 },
@@ -467,10 +468,11 @@
     html2pdf().set(opt).from(element).save();
   }
 
-  // 엑셀 저장 (워드 양식과 유사 구조)
+  // 엑셀 저장
   function downloadExcel() {
     const get = id => document.getElementById(id).value.trim();
     const loanDigits = document.getElementById('loanAmount').value.replace(/[^\d]/g, '');
+    const productSelect = document.getElementById('productName');
 
     const rows = [];
     rows.push(['업무지원 확인서']);
@@ -478,14 +480,14 @@
     rows.push(['1. 대출 실행 계약 정보']);
     rows.push(['구분', '내용']);
     rows.push(['금융기관', get('financialInstitution')]);
-    rows.push(['상품명', get('productName')]);
+    rows.push(['상품명', productSelect.value || '']);
     rows.push(['대출금액(원)', loanDigits]);
     rows.push(['실행일자', get('execDate')]);
     rows.push(['등록번호(주모집자)', formatRegWithPrefix('regNoMainSuffix')]);
     rows.push(['단체협의번호(집단대출)', get('groupNo')]);
     rows.push([]);
     rows.push(['2. 업무지원 참여자']);
-    rows.push(['구분', '등록번호', '성명', '서명']);
+    rows.push(['구분', '등록번호', '성명', '서명(수기작성)']);
     rows.push(['주모집자', formatRegWithPrefix('mainRegNoSuffix'), get('mainName'), get('mainSign')]);
     rows.push(['공동모집자', formatRegWithPrefix('jointRegNoSuffix'), get('jointName'), get('jointSign')]);
     rows.push([]);
@@ -508,6 +510,7 @@
     const inputs = document.querySelectorAll('#input-card input');
     inputs.forEach(i => i.value = '');
     document.getElementById('financialInstitution').value = '신한은행';
+    document.getElementById('productName').value = '';
     syncPreview();
   }
 
