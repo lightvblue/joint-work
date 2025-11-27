@@ -159,6 +159,19 @@
       text-align: center;
       line-height: 2;
     }
+    .reg-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: center;
+    }
+    .reg-wrap span {
+      font-size: 12px;
+    }
+    .reg-wrap input {
+      max-width: 90px;
+      text-align: center;
+    }
     @media (max-width: 960px) {
       .layout {
         flex-direction: column;
@@ -198,7 +211,7 @@
       <div class="form-row">
         <div class="field">
           <label for="financialInstitution">금융기관</label>
-          <input id="financialInstitution" />
+          <input id="financialInstitution" value="신한은행" />
         </div>
         <div class="field">
           <label for="productName">상품명</label>
@@ -217,8 +230,11 @@
       </div>
       <div class="form-row">
         <div class="field">
-          <label for="regNoMain">등록번호(주모집자)</label>
-          <input id="regNoMain" />
+          <label>등록번호(주모집자)</label>
+          <div class="reg-wrap">
+            <span>10-</span>
+            <input id="regNoMainSuffix" maxlength="8" />
+          </div>
         </div>
         <div class="field">
           <label for="groupNo">*단체협의번호(집단대출)</label>
@@ -239,13 +255,23 @@
         <tbody>
         <tr>
           <td>주모집자</td>
-          <td><input id="mainRegNo" /></td>
+          <td>
+            <div class="reg-wrap">
+              <span>10-</span>
+              <input id="mainRegNoSuffix" maxlength="8" />
+            </div>
+          </td>
           <td><input id="mainName" /></td>
           <td><input id="mainSign" /></td>
         </tr>
         <tr>
           <td>공동모집자</td>
-          <td><input id="jointRegNo" /></td>
+          <td>
+            <div class="reg-wrap">
+              <span>10-</span>
+              <input id="jointRegNoSuffix" maxlength="8" />
+            </div>
+          </td>
           <td><input id="jointName" /></td>
           <td><input id="jointSign" /></td>
         </tr>
@@ -253,8 +279,12 @@
       </table>
 
       <div class="field" style="margin-top:14px;">
-        <label for="teamName">관리팀(팀명)</label>
-        <input id="teamName" placeholder="예: 대출영업1" />
+        <label for="teamNumber">관리팀(숫자로 입력)</label>
+        <input id="teamNumber" placeholder="예: 1" />
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <label for="managerName">관리팀장 성명</label>
+        <input id="managerName" placeholder="예: 홍길동" />
       </div>
     </div>
 
@@ -269,29 +299,35 @@
         <!-- 1. 대출 실행 계약 정보 -->
         <div class="section-title">1. 대출 실행 계약 정보</div>
         <table style="margin-bottom:12px;">
+          <thead>
+          <tr>
+            <th style="width:160px;">구분</th>
+            <th>내용</th>
+          </tr>
+          </thead>
           <tbody>
           <tr>
-            <th style="width:120px;">금융기관</th>
+            <td>금융기관</td>
             <td id="pv_financialInstitution"></td>
           </tr>
           <tr>
-            <th>상품명</th>
+            <td>상품명</td>
             <td id="pv_productName"></td>
           </tr>
           <tr>
-            <th>대출금액(원)</th>
+            <td>대출금액(원)</td>
             <td id="pv_loanAmount"></td>
           </tr>
           <tr>
-            <th>실행일자</th>
+            <td>실행일자</td>
             <td id="pv_execDate"></td>
           </tr>
           <tr>
-            <th>등록번호(주모집자)</th>
+            <td>등록번호(주모집자)</td>
             <td id="pv_regNoMain"></td>
           </tr>
           <tr>
-            <th>*단체협의번호(집단대출)</th>
+            <td>*단체협의번호(집단대출)</td>
             <td id="pv_groupNo"></td>
           </tr>
           </tbody>
@@ -335,9 +371,9 @@
         <!-- 날짜 & 관리팀장 -->
         <div class="bottom-line">
           20&nbsp;&nbsp;&nbsp;&nbsp;년&nbsp;&nbsp;&nbsp;&nbsp;월&nbsp;&nbsp;&nbsp;&nbsp;일<br/><br/>
-          모기지리더스&nbsp;&nbsp;&nbsp;&nbsp;
-          <span id="pv_teamName"></span>팀&nbsp;&nbsp;&nbsp;&nbsp;
-          관리팀장&nbsp;&nbsp;_______________ (서명)
+          모기지리더스&nbsp;
+          <span id="pv_teamNumber"></span>팀&nbsp;
+          관리팀장&nbsp;<span id="pv_managerName"></span>&nbsp;(서명)
         </div>
       </div>
     </div>
@@ -352,37 +388,77 @@
 </div>
 
 <script>
+  // 숫자 포맷: 천 단위 콤마
+  function formatNumberWithCommas(value) {
+    const digits = value.replace(/[^\d]/g, '');
+    if (!digits) return '';
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  // 등록번호 10- 접두어
+  function formatRegWithPrefix(id) {
+    const el = document.getElementById(id);
+    if (!el) return '';
+    const digits = el.value.replace(/[^\d]/g, '').slice(0, 8);
+    el.value = digits;
+    if (!digits) return '';
+    return '10-' + digits;
+  }
+
   // 입력 → 미리보기 동기화
   function syncPreview() {
     const get = id => document.getElementById(id).value.trim();
 
     document.getElementById('pv_financialInstitution').innerText = get('financialInstitution');
     document.getElementById('pv_productName').innerText = get('productName');
-    document.getElementById('pv_loanAmount').innerText = get('loanAmount');
+
+    // 대출금액은 항상 콤마 포맷
+    const loanInput = document.getElementById('loanAmount');
+    loanInput.value = formatNumberWithCommas(loanInput.value);
+    document.getElementById('pv_loanAmount').innerText = loanInput.value;
+
     document.getElementById('pv_execDate').innerText = get('execDate');
-    document.getElementById('pv_regNoMain').innerText = get('regNoMain');
+
+    document.getElementById('pv_regNoMain').innerText = formatRegWithPrefix('regNoMainSuffix');
     document.getElementById('pv_groupNo').innerText = get('groupNo');
 
-    document.getElementById('pv_mainRegNo').innerText = get('mainRegNo');
+    document.getElementById('pv_mainRegNo').innerText = formatRegWithPrefix('mainRegNoSuffix');
     document.getElementById('pv_mainName').innerText = get('mainName');
     document.getElementById('pv_mainSign').innerText = get('mainSign');
 
-    document.getElementById('pv_jointRegNo').innerText = get('jointRegNo');
+    document.getElementById('pv_jointRegNo').innerText = formatRegWithPrefix('jointRegNoSuffix');
     document.getElementById('pv_jointName').innerText = get('jointName');
     document.getElementById('pv_jointSign').innerText = get('jointSign');
 
-    document.getElementById('pv_teamName').innerText = get('teamName');
+    document.getElementById('pv_teamNumber').innerText = get('teamNumber');
+    document.getElementById('pv_managerName').innerText = get('managerName');
   }
 
   function bindInputs() {
     document.getElementById('input-card').addEventListener('input', syncPreview);
+
+    // 등록번호 입력은 숫자만
+    ['regNoMainSuffix','mainRegNoSuffix','jointRegNoSuffix'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('input', () => {
+        el.value = el.value.replace(/[^\d]/g, '').slice(0, 8);
+        syncPreview();
+      });
+    });
+
+    // 대출금액 포맷 (blur 시 정리)
+    const loanInput = document.getElementById('loanAmount');
+    loanInput.addEventListener('blur', () => {
+      loanInput.value = formatNumberWithCommas(loanInput.value);
+      syncPreview();
+    });
   }
 
   // PDF 저장
   function downloadPdf() {
     const element = document.getElementById('pdfArea');
     const opt = {
-      margin:       10,
+      margin:       15,  // 좌우 여백 넉넉하게
       filename:     '업무지원_확인서.pdf',
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2 },
@@ -391,33 +467,34 @@
     html2pdf().set(opt).from(element).save();
   }
 
-  // 엑셀 저장 (워드 양식과 같은 구조)
+  // 엑셀 저장 (워드 양식과 유사 구조)
   function downloadExcel() {
     const get = id => document.getElementById(id).value.trim();
+    const loanDigits = document.getElementById('loanAmount').value.replace(/[^\d]/g, '');
 
     const rows = [];
     rows.push(['업무지원 확인서']);
     rows.push([]);
     rows.push(['1. 대출 실행 계약 정보']);
-    rows.push(['항목', '값']);
+    rows.push(['구분', '내용']);
     rows.push(['금융기관', get('financialInstitution')]);
     rows.push(['상품명', get('productName')]);
-    rows.push(['대출금액(원)', get('loanAmount')]);
+    rows.push(['대출금액(원)', loanDigits]);
     rows.push(['실행일자', get('execDate')]);
-    rows.push(['등록번호(주모집자)', get('regNoMain')]);
+    rows.push(['등록번호(주모집자)', formatRegWithPrefix('regNoMainSuffix')]);
     rows.push(['단체협의번호(집단대출)', get('groupNo')]);
     rows.push([]);
     rows.push(['2. 업무지원 참여자']);
     rows.push(['구분', '등록번호', '성명', '서명']);
-    rows.push(['주모집자', get('mainRegNo'), get('mainName'), get('mainSign')]);
-    rows.push(['공동모집자', get('jointRegNo'), get('jointName'), get('jointSign')]);
+    rows.push(['주모집자', formatRegWithPrefix('mainRegNoSuffix'), get('mainName'), get('mainSign')]);
+    rows.push(['공동모집자', formatRegWithPrefix('jointRegNoSuffix'), get('jointName'), get('jointSign')]);
     rows.push([]);
     rows.push(['3. 내부 정산 규정']);
     rows.push(['1) 업무지원 건의 수수료 배분은 회사 규정에 따라 주모집자 60%, 공동모집자 40% 비율로 고정하여 산정합니다.']);
     rows.push(['2) 대출실행계약과 관련한 민원, 리스크, 패널티는 주모집자에게 귀속됩니다.']);
     rows.push(['3) 본 문서는 관련 법령 및 회사 규정에 따라 5년간 보관됩니다.']);
     rows.push([]);
-    rows.push(['모기지리더스', get('teamName') + '팀', '관리팀장 서명: _____________']);
+    rows.push(['모기지리더스', get('teamNumber') + '팀', '관리팀장: ' + get('managerName')]);
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -430,6 +507,7 @@
     if (!confirm('입력 내용을 모두 지우시겠습니까?')) return;
     const inputs = document.querySelectorAll('#input-card input');
     inputs.forEach(i => i.value = '');
+    document.getElementById('financialInstitution').value = '신한은행';
     syncPreview();
   }
 
