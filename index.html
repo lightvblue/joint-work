@@ -7,8 +7,7 @@
 
   <!-- PDF, Excel 라이브러리 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
+  
   <style>
     * { box-sizing: border-box; }
     body {
@@ -385,7 +384,6 @@
   <!-- 버튼 패널 -->
   <div class="btn-panel">
     <button class="btn" id="btnPdf">PDF로 저장</button>
-    <button class="btn btn-secondary" id="btnExcel">엑셀로 저장</button>
     <button class="btn btn-secondary" id="btnReset">입력 초기화</button>
   </div>
 </div>
@@ -475,42 +473,6 @@
     html2pdf().set(opt).from(element).save();
   }
 
-  // 엑셀 저장
-  function downloadExcel() {
-    const get = id => document.getElementById(id).value.trim();
-    const loanDigits = document.getElementById('loanAmount').value.replace(/[^\d]/g, '');
-    const productSelect = document.getElementById('productName');
-
-    const rows = [];
-    rows.push(['업무지원 확인서']);
-    rows.push([]);
-    rows.push(['1. 대출 실행 계약 정보']);
-    rows.push(['구분', '내용']);
-    rows.push(['금융기관', get('financialInstitution')]);
-    rows.push(['상품명', productSelect.value || '']);
-    rows.push(['대출금액(원)', loanDigits]);
-    rows.push(['실행일자', get('execDate')]);
-    rows.push(['등록번호(주모집자)', formatRegWithPrefix('regNoMainSuffix')]);
-    rows.push(['단체협의번호(집단대출)', get('groupNo')]);
-    rows.push([]);
-    rows.push(['2. 업무지원 참여자']);
-    rows.push(['구분', '등록번호', '성명', '서명(수기작성)']);
-    rows.push(['주모집자', formatRegWithPrefix('mainRegNoSuffix'), get('mainName'), get('mainSign')]);
-    rows.push(['공동모집자', formatRegWithPrefix('jointRegNoSuffix'), get('jointName'), get('jointSign')]);
-    rows.push([]);
-    rows.push(['3. 내부 정산 규정']);
-    rows.push(['1) 업무지원 건의 수수료 배분은 회사 규정에 따라 주모집자 60%, 공동모집자 40% 비율로 고정하여 산정합니다.']);
-    rows.push(['2) 대출실행계약과 관련한 민원, 리스크, 패널티는 주모집자에게 귀속됩니다.']);
-    rows.push(['3) 본 문서는 관련 법령 및 회사 규정에 따라 5년간 보관됩니다.']);
-    rows.push([]);
-    rows.push(['모기지리더스', get('teamNumber') + '팀', '관리팀장: ' + get('managerName')]);
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    XLSX.utils.book_append_sheet(wb, ws, '업무지원확인서');
-    XLSX.writeFile(wb, '업무지원_확인서.xlsx');
-  }
-
   // 입력 초기화
   function resetForm() {
     if (!confirm('입력 내용을 모두 지우시겠습니까?')) return;
@@ -523,7 +485,6 @@
 
   function bindButtons() {
     document.getElementById('btnPdf').addEventListener('click', downloadPdf);
-    document.getElementById('btnExcel').addEventListener('click', downloadExcel);
     document.getElementById('btnReset').addEventListener('click', resetForm);
   }
 
@@ -535,4 +496,5 @@
 </script>
 </body>
 </html>
+
 
